@@ -297,7 +297,8 @@ export class AppComponent {
 
   getLineWidth(interval: Interval) {
 
-    return this.getCoords(this.getThumbElementById(interval.right_idx)).left - this.getCoords(this.getThumbElementById(interval.left_idx)).left + 'px'
+    return this.getCoords(this.getThumbElementById(interval.right_idx)).left
+      - this.getCoords(this.getThumbElementById(interval.left_idx)).left + 'px'
 
   }
 
