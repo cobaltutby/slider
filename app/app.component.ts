@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Validators, FormControl, FormGroupDirective, NgForm } from '@angular/forms';
+import { ErrorStateMatcher } from '@angular/material';
 
 @Component({
   selector: 'app-root',
@@ -19,16 +21,25 @@ export class AppComponent {
   intervals_count = 1;
   thumb_count = 6;
 
-  thumbs: string[];
+  min_range = 1;
+  max_range = 610;
 
   min_value = 1;
-  max_value = 100;
+  max_value = 10;
 
-  min_interval = 1;
+  min_interval = 10;
 
-
+  slider_size = 10;
   intervals: Interval[];
 
+  minFormControl = new FormControl('', [
+    Validators.required,
+    Validators.min(this.min_range),
+  ]);
+  maxFormControl = new FormControl('', [
+    Validators.required,
+    Validators.max(this.max_range),
+  ]);
 
   constructor() {
 
@@ -39,15 +50,12 @@ export class AppComponent {
       this.sliderElem = document.getElementById('slider');
       this.sliderCoords = this.getCoords(this.sliderElem);
       this.max_value = this.sliderElem.offsetWidth;
-
     }, 0);
-
-    // this.updateSlider()
 
   }
 
 
-  getElements(id: number) {
+  getThumbElementById(id: number) {
 
     return document.getElementById('thumb' + id);
 
@@ -62,7 +70,7 @@ export class AppComponent {
   mouseDown(e: MouseEvent, thb_id: number) {
 
     this.activeElement = thb_id;
-    this.thumbCoords = this.getCoords(this.getElements(thb_id));
+    this.thumbCoords = this.getCoords(this.getThumbElementById(thb_id));
     this.shiftX = e.pageX - this.thumbCoords.left;
 
     return false;
@@ -92,8 +100,8 @@ export class AppComponent {
   getDisabledLimit(interval: Interval) {
 
 
-    const current_right_position = this.getCoords(this.getElements(interval.right_idx)).left;
-    const current_left_position = this.getCoords(this.getElements(interval.left_idx)).left;
+    const current_right_position = this.getCoords(this.getThumbElementById(interval.right_idx)).left;
+    const current_left_position = this.getCoords(this.getThumbElementById(interval.left_idx)).left;
 
 
     const disabled_intervals = this.getDisabledIntervals();
@@ -103,14 +111,14 @@ export class AppComponent {
 
     disabled_intervals.forEach(disabled_interval => {
 
-      const disabled_interval_left_limit = this.getCoords(this.getElements(disabled_interval.left_idx)).left;
-      const disabled_interval_right_limit = this.getCoords(this.getElements(disabled_interval.right_idx)).left;
+      const disabled_interval_left_limit = this.getCoords(this.getThumbElementById(disabled_interval.left_idx)).left;
+      const disabled_interval_right_limit = this.getCoords(this.getThumbElementById(disabled_interval.right_idx)).left;
       if (disabled_interval_left_limit > current_right_position && current_right_limit > disabled_interval_left_limit) {
-        current_right_limit = disabled_interval_left_limit - this.sliderCoords.left;
+        current_right_limit = disabled_interval_left_limit;
       }
 
       if (disabled_interval_right_limit < current_left_position && current_left_limit < disabled_interval_right_limit) {
-        current_left_limit = disabled_interval_right_limit - this.sliderCoords.left;
+        current_left_limit = disabled_interval_right_limit;
       }
 
     });
@@ -126,34 +134,16 @@ export class AppComponent {
       return;
     }
 
-
     const interval = this.getActiveInterval(this.activeElement);
 
     const [current_left_limit, current_right_limit] = this.getDisabledLimit(interval);
 
-
-
     let thumb: HTMLElement;
-    const line = this.getLine(interval.index);
+
     const isRight = this.activeElement === interval.right_idx;
 
-    let left_thumb_idx = null;
-    let right_thumb_idx = null;
-
-    if (this.activeElement === interval.left_idx || this.activeElement === interval.right_idx) {
-      left_thumb_idx = interval.left_idx;
-      right_thumb_idx = interval.right_idx;
-    }
-
-    const left_limit = null;
-    const right_limit = null;
-
-    const left_thumb = this.getElements(left_thumb_idx);
-    const left = this.getCoords(left_thumb).left;
-    const right_thumb = this.getElements(right_thumb_idx);
-    const right = this.getCoords(right_thumb).left;
-
-
+    const left_thumb = this.getThumbElementById(interval.left_idx);
+    const right_thumb = this.getThumbElementById(interval.right_idx);
 
     if (isRight) {
       thumb = right_thumb;
@@ -161,16 +151,14 @@ export class AppComponent {
       thumb = left_thumb;
     }
 
-    let newLeft = e.pageX - this.shiftX - this.sliderCoords.left;
-
-
+    let newLeft = e.pageX - this.shiftX;
 
     if (newLeft < 0) {
       newLeft = 0;
     }
 
-    if (isRight && newLeft < this.getCoords(left_thumb).left - this.sliderCoords.left + this.min_interval) {
-      newLeft = this.getCoords(left_thumb).left - this.sliderCoords.left + this.min_interval
+    if (isRight && newLeft < this.getCoords(left_thumb).left + this.min_interval) {
+      newLeft = this.getCoords(left_thumb).left + this.min_interval
     }
 
     const rightEdge = this.sliderElem.offsetWidth - thumb.offsetWidth;
@@ -179,32 +167,29 @@ export class AppComponent {
       newLeft = rightEdge;
     }
 
-    if (!isRight && newLeft > (this.getCoords(right_thumb).left - this.sliderCoords.left - this.min_interval)) {
-
-      newLeft = (this.getCoords(right_thumb).left - this.sliderCoords.left - this.min_interval);
+    if (!isRight && newLeft > (this.getCoords(right_thumb).left - this.min_interval)) {
+      newLeft = (this.getCoords(right_thumb).left - this.min_interval);
     }
 
-    thumb.style.background = interval.disabled ? 'grey' : 'blue';
+    thumb.style.background = interval.disabled ? Color.Grey : Color.Blue;
 
 
-    if (isRight && current_right_limit < 999 && newLeft > current_right_limit - 10) {
-      newLeft = current_right_limit - 10;
-      thumb.style.background = 'red';
+    if (isRight && current_right_limit < 999 && newLeft > current_right_limit - this.slider_size) {
+      newLeft = current_right_limit - this.slider_size;
+      thumb.style.background = Color.Red;
     }
 
-    if (!isRight && current_left_limit > -1 && newLeft < current_left_limit + 10) {
-      newLeft = current_left_limit + 10;
-      thumb.style.background = 'red';
+    if (!isRight && current_left_limit > -1 && newLeft < current_left_limit + this.slider_size) {
+      newLeft = current_left_limit + this.slider_size;
+      thumb.style.background = Color.Red;
     }
 
-    const current_line_left = Number(line.style.left.split('px')[0])
-    const current_line_width = Number(line.style.width.split('px')[0])
+    if (newLeft < this.min_value) {
+      newLeft = this.min_value;
+    }
 
-    if (isRight) {
-      line.style.width = (newLeft - current_line_left) + 'px';
-    } else {
-      line.style.width = (current_line_width - (newLeft - current_line_left)) + 'px';
-      line.style.left = newLeft + 'px';
+    if (newLeft > this.max_value) {
+      newLeft = this.max_value;
     }
 
     thumb.style.left = newLeft + 'px';
@@ -215,27 +200,27 @@ export class AppComponent {
 
     this.activeElement = -1;
     return false;
-  }
 
-
-  dragStart() {
-    return false;
   }
 
   onmouseleave() {
+
     this.activeElement = -1;
+
   }
 
 
   getCoords(elem: HTMLElement) {
 
+    if (!elem) {
+      return new Coords(0, 0)
+    }
 
     const box = elem.getBoundingClientRect();
 
-    return new Coords(
-      Number(box.top + window.pageYOffset),
-      Number(box.left + window.pageXOffset)
-    );
+    const slider_offset = this.sliderCoords ? this.sliderCoords.left : 0;
+
+    return new Coords(box.top, box.left - slider_offset);
 
   }
 
@@ -247,7 +232,7 @@ export class AppComponent {
     new_interval.left_idx = 2 * this.intervals.length;
     new_interval.right_idx = new_interval.left_idx + 1;
     new_interval.index = this.intervals.length;
-    new_interval.color = disabled ? 'grey' : 'blue';
+    new_interval.color = disabled ? Color.Grey : Color.Blue;
 
     this.intervals.push(new_interval);
     this.setDefaultColors(new_interval);
@@ -257,19 +242,70 @@ export class AppComponent {
   setDefaultColors(interval: Interval) {
 
     setTimeout(() => {
-      const thumb1 = this.getElements(interval.left_idx);
-      const thumb2 = this.getElements(interval.right_idx);
+
+      const thumb1 = this.getThumbElementById(interval.left_idx);
+      const thumb2 = this.getThumbElementById(interval.right_idx);
       const line = this.getLine(interval.index);
 
       thumb1.style.background = interval.color;
       thumb2.style.background = interval.color;
       line.style.background = interval.color;
-    }, 0)
 
+      this.setDefaultPosition(interval);
+
+    }, 0)
+  }
+
+  setDefaultPosition(interval: Interval) {
+
+    const thumb1 = this.getThumbElementById(interval.left_idx);
+    const thumb2 = this.getThumbElementById(interval.right_idx);
+
+    thumb2.style.left = (Number(thumb1.style.width.split('px')[0])) + 'px';
 
   }
 
 
+  getTextPosition(interval: Interval) {
+
+    if (interval.index % 2 === 0) {
+      return '-20px';
+    }
+    return '25px';
+
+  }
+
+  updateLimits() {
+
+    this.intervals.forEach(interval => {
+
+      const thumb1 = this.getThumbElementById(interval.left_idx);
+      const thumb2 = this.getThumbElementById(interval.right_idx);
+      const line = this.getLine(interval.index);
+
+      if (this.getCoords(thumb1).left < this.min_value) {
+        thumb1.style.left = this.min_value + 'px';
+      }
+
+      if (this.getCoords(thumb2).left > this.max_value) {
+        thumb2.style.left = this.max_value + 'px';
+      }
+
+    })
+
+  }
+
+  getLineWidth(interval: Interval) {
+
+    return this.getCoords(this.getThumbElementById(interval.right_idx)).left - this.getCoords(this.getThumbElementById(interval.left_idx)).left + 'px'
+
+  }
+
+  getLineLeft(interval: Interval) {
+
+    return this.getCoords(this.getThumbElementById(interval.left_idx)).left + 'px'
+
+  }
 
 }
 
@@ -297,4 +333,10 @@ export class Interval {
     this.right_idx = right_idx;
     this.color = color;
   }
+}
+
+export const Color = {
+  Red: 'red',
+  Grey: 'grey',
+  Blue: 'blue'
 }
