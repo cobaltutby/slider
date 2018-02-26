@@ -1,0 +1,51 @@
+<br>
+<br>
+<br>
+<div style="padding: 10px;" (mousemove)="onmousemove($event)" (mouseleave)="onmouseleave()" (mouseup)="onmouseup()">
+  <div id="slider" class="slider">
+    <ng-container *ngFor="let thb of intervals; let index=index">
+      <div [id]="'thumb' + thb.left_idx" class="thumb" (mousedown)="mouseDown($event, thb.left_idx)">
+        <div [id]="'label' + thb.left_idx" class="label" [ngStyle]="{'color' : thb.color}">{{getCoords(getElements(thb.left_idx)).left}}
+        </div>
+      </div>
+
+      <div [id]="'line' + index" class="line" [ngStyle]="{'background' : thb.color}">
+      </div>
+      <div [id]="'thumb' + thb.right_idx" class="thumb" (mousedown)="mouseDown($event, thb.right_idx)">
+        <div [id]="'label' + thb.right_idx" class="label" [ngStyle]="{'color' : thb.color}">{{getCoords(getElements(thb.right_idx)).left}}
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+</div>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<form class="example-form">
+
+  <p>
+    Please Specify Range
+  </p>
+
+  <mat-form-field>
+    <input matInput type="number" [min]="0" [max]="max_value" name="min" placeholder="Enter minimum value" [(ngModel)]="min_value">
+  </mat-form-field>
+
+  <mat-form-field>
+    <input matInput type="number" [min]="min_value + 1" [max]="100" name="max" placeholder="Enter maximum value" [(ngModel)]="max_value">
+  </mat-form-field>
+
+  <br>
+
+</form>
+
+<button mat-raised-button (click)="addInterval(false)" color="primary">Add Normal Interval</button>
+<br>
+<br>
+
+<button mat-raised-button (click)="addInterval(true)" color="primary">Add Disabled Interval</button>
